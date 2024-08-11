@@ -8,7 +8,7 @@ class QuerySerializer(ModelSerializer):
 
     class Meta:
         model = Query
-        fields = ['id','cadastral_number','lattitude','longtitude','created_at','updated_at']
+        fields = ['id','cadastral_number','latitude','longtitude','created_at','updated_at']
         
 
 class ResultSerializer(ModelSerializer):

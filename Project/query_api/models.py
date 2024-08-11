@@ -3,8 +3,8 @@ from django.db import models
 
 class Query(models.Model):
     cadastral_number = models.IntegerField()
-    latitude = models.DecimalField(max_digits=5,decimal_places=3)
-    longtitude = models.DecimalField(max_digits=5,decimal_places=3)
+    latitude = models.DecimalField(max_digits=6,decimal_places=3)
+    longtitude = models.DecimalField(max_digits=6,decimal_places=3)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

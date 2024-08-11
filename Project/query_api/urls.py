@@ -3,7 +3,7 @@ from query_api import views
 
 
 urlpatterns = [
-    #path('query/', views),
+    path('query/', views.QueryViewSet.as_view({'post':'create'})),
     #path('result/', views),
     #path('ping/', views),
     #path('history/', views),

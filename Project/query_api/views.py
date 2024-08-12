@@ -8,83 +8,87 @@ from rest_framework.response import Response
 from rest_framework.exceptions import APIException
 
 from query_api.models import Query
-from query_api.serializers import QuerySerializer, ResultSerializer
-
+from query_api.serializers import QuerySerializer
+from query_api.tasks import send_query
 
 class QueryViewSet(viewsets.ViewSet):
     """
     A views set for posting data to /query endpoint
     """
+
     def create(self, request):
-        data = request.data
-        serializer = QuerySerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        
-        # Emulate a request to a third-party server
-        time.sleep(randint(1, 5))
-        result = choice([True, False, None])  # Use boolean values
-        
-        if result is not None:
-            with transaction.atomic():
-                query = serializer.save()
-                
-                result_data = {
-                    "query_id": query.id,
-                    "result": result
-                }
-                print(f"Result data to be sent: {result_data}")
-                
-                # Emulating a post request to /results endpoint
-                post_request = requests.post(
-                    "http://127.0.0.1:8000/api/result/",
-                    headers={"Content-Type": "application/json"},
-                    data=json.dumps(result_data)  # Convert dict to JSON string
-                )
-                if post_request.status_code != 201:
-                    # Logging the error
-                    print("Failed to save result")
-                    raise APIException(detail="Failed to save result", code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
-                return Response(data=result_data, status=status.HTTP_201_CREATED)
-    
-        else: 
-            # Imitating a no response from the third-party server
-            raise APIException(detail="Server error", code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        try:
+            data = request.data
+            serializer = QuerySerializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            query = serializer.save()
+            query_id = query.id
+
+            #Celery task
+            #send_query.delay(query_id)
+
+            return Response(
+                {"query_id":query_id}, 
+                status=status.HTTP_201_CREATED
+            )
+
+        except APIException as e:
+            query.delete()
+            return Response({"error":str(e.detail)})
 
 
 
 class ResultViewSet(viewsets.ViewSet):
 
-    def create(self,request):
-        query_id = request.data.get('query_id')
-        result = request.data.get('result')
+    def retrieve(self, request, pk):
+        try:
+            query = get_object_or_404(Query,pk=pk)
+            serializer = QuerySerializer(query)
 
-        serializer = ResultSerializer(data={
-            "query": query_id,
-            "result": result
-            }
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response(serializer.data,status=status.HTTP_201_CREATED)
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        
+        except APIException as e:
+            print(e)
+            return Response({"error":"An unexpected error occured"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+    def partial_update(self, request, pk):
+        try:
+            query = get_object_or_404(Query,pk=pk)
+            result = request.data
+
+            serializer = QuerySerializer(query,data=result,partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        except APIException as e:
+            print(e)
+            return Response({"error":"An unexpected error occured"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class HistoryViewSet(viewsets.ViewSet):
 
     def list(self,request):
-        try:
-            queryset = Query.objects.all()
-            serializer = QuerySerializer(queryset)
-            print(serializer.data)
-            
-            
-            return Response(serializer.data,status=status.HTTP_200_OK)
+        cadastral_number = request.query_params['cadastral_number']
+        queryset = Query.objects.all()
 
+        if cadastral_number:
+            queryset = queryset.filter(cadastral_number=cadastral_number)
+            query = get_object_or_404(queryset)
+            serializer = QuerySerializer(query)
+
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        
+        try:
+            serializer = QuerySerializer(queryset,many=True)
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        
         except Query.DoesNotExist:
             return Response({"error": "No queries found"}, status=status.HTTP_404_NOT_FOUND)
-    
 
+        except APIException as e:
+            print(e)
+            return Response({"error":"An unexpected error occured"},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 

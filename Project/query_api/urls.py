@@ -1,10 +1,11 @@
-from django.urls import include, path
-from query_api import views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from . import views
 
 
-urlpatterns = [
-    path('query/', views.QueryViewSet.as_view({'post':'create'})),
-    path('result/', views.ResultViewSet.as_view({'post':'create'})),
-    #path('ping/', views),
-    path('history/', views.HistoryViewSet.as_view({'get':'list'}))
-]
+router = DefaultRouter()
+router.register(r'query', views.QueryViewSet,basename='query')
+router.register(r'result', views.ResultViewSet,basename='result')
+router.register(r'history', views.HistoryViewSet,basename='history')
+
+urlpatterns = router.urls

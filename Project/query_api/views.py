@@ -92,6 +92,7 @@ class ResultViewSet(viewsets.ViewSet):
 class HistoryViewSet(viewsets.ViewSet):
     """A viewset for the /history endpoint"""
 
+    
     def list(self,request):
         #Enable filtering by cadastral-number
         cadastral_number = request.query_params.get('cadastral_number')

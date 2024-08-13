@@ -1,17 +1,17 @@
 import time, random
 from celery import shared_task
-
 from query_api.models import Query
 
 
-@shared_task
+@shared_task()
 def send_query(query_id):
 
-    """A task for sending query data to a third-party server """
+    """A task for sending query data to a third-party server 
+    and saving the result in the DB """
 
     time.sleep(random.randint(1,5))
 
-    result = random.choice([True,False])
+    result = random.choice([True,False,None])
     print(f"Emulated response is {result}")
     
 
@@ -25,19 +25,18 @@ def send_query(query_id):
     #     # Logging the error
     #     print("Failed to save result")
     #     raise APIException(detail="Failed to save result", code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
+    if result != None:      
+        try:
+            query = Query.objects.get(id=query_id)
+            query.result = result
+            query.save()
+            print(f"{query.__str__} has been updated successfully")
+            
+        except Exception as e:
+            print(e)
+    raise ValueError({"error": "No response from the server. Unable to receive data"})
 
-
-
-    try:
-        query = Query.objects.get(id=query_id)
-        query.result = result
-        obj = query.save()
-        print(f"{obj} has been updated successfully")
         
-    except Exception as e:
-        print(e)
-        return 
         
     
     

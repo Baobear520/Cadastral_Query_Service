@@ -1,3 +1,4 @@
+from django.utils.timezone import now
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.response import Response
@@ -125,3 +126,15 @@ class HistoryViewSet(viewsets.ViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
+class PingViewSet(viewsets.ViewSet):
+    "A viewset for the /ping endpoint"
+
+    def list(self, request):
+        try:
+            return Response(
+                {"status":"The service is up and running",
+                "timestamp": now(),
+                "version": "1.0.0"},
+                status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -1,6 +1,10 @@
-import time, random
+import time, random, logging
 from celery import shared_task
+from django.db import IntegrityError
 from query_api.models import Query
+
+ 
+logger = logging.getLogger(__name__)
 
 
 @shared_task()
@@ -12,9 +16,7 @@ def send_query(query_id):
     time.sleep(random.randint(1,5))
 
     result = random.choice([True,False])
-    print(f"Emulated response is {result}")
     
-
     # # Emulating a post request to /results endpoint
     # post_request = requests.post(
     #     "http://127.0.0.1:8000/api/result/",
@@ -30,10 +32,17 @@ def send_query(query_id):
         query = Query.objects.get(id=query_id)
         query.result = result
         query.save()
-        print(f"{query.__str__()} has been updated successfully")
         
+        logger.info(f"{query} has been updated successfully")
+        
+    except Query.DoesNotExist as e:
+        logger.error(e)
+    
+    except IntegrityError as e:
+        logger.error(f"Error updating {query}: {e}")
+    
     except Exception as e:
-        print(e)
+        logger(e)
 
         
         

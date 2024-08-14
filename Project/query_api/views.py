@@ -1,3 +1,5 @@
+import logging
+
 from django.utils.timezone import now
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status
@@ -8,6 +10,9 @@ from query_api.models import Query
 from query_api.serializers import QuerySerializer
 from query_api.tasks import send_query
 
+
+
+logger = logging.getLogger(__name__)
 
 class QueryViewSet(viewsets.ViewSet):
     """
@@ -25,24 +30,28 @@ class QueryViewSet(viewsets.ViewSet):
             query = serializer.save()
             send_query.delay(query.id)
             
-
+            logger.info(f"{query} with {data} parameters has been created")
             return Response(
                 {"query_id": query.id}, 
                 status=status.HTTP_201_CREATED)
 
         except ValidationError as e:
+            logger.error(e)
             return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
         
         except APIException as e:
+            logger.error(e)
             if query.id:
                 query.delete()
+                logger.info(f"Rolling back {str(query)} creation")
             return Response(
                 {"error": e.detail},status=e.status_code)
         
         except Exception as e:
-            print(e)
+            logger.error(e)
             if query.id:
                 query.delete()
+                logger.info(f"Rolling back {query} creation")
             return Response(
                 {"error": "An unexpected error occurred."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -60,11 +69,12 @@ class ResultViewSet(viewsets.ViewSet):
             return Response(serializer.data,status=status.HTTP_200_OK)
         
         except APIException as e:
+            logger.error(e)
             return Response(
                 {"error": e.detail},status=e.status_code)
         
         except Exception as e:
-            print(e)
+            logger.error(e)
             return Response(
                 {"error": "An unexpected error occurred."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -79,14 +89,16 @@ class ResultViewSet(viewsets.ViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
+            logger.info(f"{query} has been updated")
             return Response(serializer.data,status=status.HTTP_200_OK)
         
         except APIException as e:
+            logger.error(e)
             return Response(
                 {"error": e.detail},status=e.status_code)
         
         except Exception as e:
-            print(e)
+            logger.error(e)
             return Response(
                 {"error": "An unexpected error occurred."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -113,14 +125,16 @@ class HistoryViewSet(viewsets.ViewSet):
             return Response(serializer.data,status=status.HTTP_200_OK)
         
         except Query.DoesNotExist:
+            logger.error(e)
             return Response({"error": "No queries found"}, status=status.HTTP_404_NOT_FOUND)
 
         except APIException as e:
+            logger.error(e)
             return Response(
                 {"error": e.detail},status=e.status_code)
         
         except Exception as e:
-            print(e)
+            logger.error(e)
             return Response(
                 {"error": "An unexpected error occurred."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -137,4 +151,5 @@ class PingViewSet(viewsets.ViewSet):
                 "version": "1.0.0"},
                 status=status.HTTP_200_OK)
         except Exception as e:
+            logger.error(e)
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

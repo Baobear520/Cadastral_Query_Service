@@ -11,7 +11,7 @@ def send_query(query_id):
 
     time.sleep(random.randint(1,5))
 
-    result = random.choice([True,False,None])
+    result = random.choice([True,False])
     print(f"Emulated response is {result}")
     
 
@@ -25,16 +25,15 @@ def send_query(query_id):
     #     # Logging the error
     #     print("Failed to save result")
     #     raise APIException(detail="Failed to save result", code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    if result != None:      
-        try:
-            query = Query.objects.get(id=query_id)
-            query.result = result
-            query.save()
-            print(f"{query.__str__} has been updated successfully")
-            
-        except Exception as e:
-            print(e)
-    raise ValueError({"error": "No response from the server. Unable to receive data"})
+    
+    try:
+        query = Query.objects.get(id=query_id)
+        query.result = result
+        query.save()
+        print(f"{query.__str__()} has been updated successfully")
+        
+    except Exception as e:
+        print(e)
 
         
         

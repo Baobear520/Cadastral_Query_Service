@@ -19,10 +19,11 @@ class QueryViewSet(viewsets.ViewSet):
             data = request.data
             serializer = QuerySerializer(data=data)
             serializer.is_valid(raise_exception=True)
+            
+           
             query = serializer.save()
-
-            #Celery task that gets the "result" and saves it in the DB
             send_query.delay(query.id)
+            
 
             return Response(
                 {"query_id": query.id}, 

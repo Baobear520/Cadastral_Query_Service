@@ -22,7 +22,7 @@ class QueryViewSet(mixins.CreateModelMixin,viewsets.GenericViewSet):
 
         # Start asynchronous task
         send_query.delay(query.id)
-        logger.info(f"{query} with {request.data} parameters has been created")
+        logger.info(f"A query with {request.data} parameters has been created")
 
         return Response(
             {"query_id": query.id}, 

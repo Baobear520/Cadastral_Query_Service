@@ -7,14 +7,14 @@ class QuerySerializer(ModelSerializer):
 
     class Meta:
         model = Query
-        fields = ['id','cadastral_number','latitude','longtitude']
+        fields = ['id','cadastral_number','latitude','longitude']
 
 class HistorySerializer(ModelSerializer):
     """A serializer class for representing Query model at /history endpoint """
 
     class Meta:
         model = Query
-        fields = ['id','cadastral_number','latitude','longtitude','result','created_at','updated_at']
+        fields = ['id','cadastral_number','latitude','longitude','result','created_at','updated_at']
         
 
 

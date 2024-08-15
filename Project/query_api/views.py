@@ -1,155 +1,56 @@
-import logging
-
 from django.utils.timezone import now
-from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, status
+from rest_framework import mixins,viewsets,status
 from rest_framework.response import Response
-from rest_framework.exceptions import APIException, ValidationError
-
 from query_api.models import Query
-from query_api.serializers import QuerySerializer
+from query_api.serializers import QuerySerializer, HistorySerializer
 from query_api.tasks import send_query
-
-
+import logging
 
 logger = logging.getLogger(__name__)
 
-class QueryViewSet(viewsets.ViewSet):
+class QueryViewSet(mixins.CreateModelMixin,viewsets.GenericViewSet):
     """
-    A viewset for the /query endpoint
+    A viewset for handling Query creation and retrieval.
     """
+    queryset = Query.objects.all()
+    serializer_class = QuerySerializer
 
-    def create(self, request):
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        query = serializer.save()
 
-        try:
-            data = request.data
-            serializer = QuerySerializer(data=data)
-            serializer.is_valid(raise_exception=True)
-            
-           
-            query = serializer.save()
-            send_query.delay(query.id)
-            
-            logger.info(f"{query} with {data} parameters has been created")
-            return Response(
-                {"query_id": query.id}, 
-                status=status.HTTP_201_CREATED)
+        # Start asynchronous task
+        send_query.delay(query.id)
+        logger.info(f"{query} with {request.data} parameters has been created")
 
-        except ValidationError as e:
-            logger.error(e)
-            return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
-        
-        except APIException as e:
-            logger.error(e)
-            if query.id:
-                query.delete()
-                logger.info(f"Rolling back {str(query)} creation")
-            return Response(
-                {"error": e.detail},status=e.status_code)
-        
-        except Exception as e:
-            logger.error(e)
-            if query.id:
-                query.delete()
-                logger.info(f"Rolling back {query} creation")
-            return Response(
-                {"error": "An unexpected error occurred."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(
+            {"query_id": query.id}, 
+            status=status.HTTP_201_CREATED
+        )
 
+class HistoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    A viewset for retrieving the history of all queries or filtering by cadastral number.
+    """
+    serializer_class = HistorySerializer
 
-
-class ResultViewSet(viewsets.ViewSet):
-    """A viewset for the /result endpoint"""
-
-    def retrieve(self, request, pk):
-        try:
-            query = get_object_or_404(Query,pk=pk)
-            serializer = QuerySerializer(query)
-
-            return Response(serializer.data,status=status.HTTP_200_OK)
-        
-        except APIException as e:
-            logger.error(e)
-            return Response(
-                {"error": e.detail},status=e.status_code)
-        
-        except Exception as e:
-            logger.error(e)
-            return Response(
-                {"error": "An unexpected error occurred."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-    
-    def partial_update(self, request, pk):
-        try:
-            query = get_object_or_404(Query,pk=pk)
-            result = request.data
-
-            serializer = QuerySerializer(query,data=result,partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-
-            logger.info(f"{query} has been updated")
-            return Response(serializer.data,status=status.HTTP_200_OK)
-        
-        except APIException as e:
-            logger.error(e)
-            return Response(
-                {"error": e.detail},status=e.status_code)
-        
-        except Exception as e:
-            logger.error(e)
-            return Response(
-                {"error": "An unexpected error occurred."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-class HistoryViewSet(viewsets.ViewSet):
-    """A viewset for the /history endpoint"""
-
-    
-    def list(self,request):
-        #Enable filtering by cadastral-number
-        cadastral_number = request.query_params.get('cadastral_number')
+    def get_queryset(self):
         queryset = Query.objects.all()
-
-        #Filter the base queryset
+        cadastral_number = self.request.query_params.get('cadastral_number')
         if cadastral_number:
             queryset = queryset.filter(cadastral_number=cadastral_number)
-            query = get_object_or_404(queryset)
-            serializer = QuerySerializer(query)
+        return queryset
 
-            return Response(serializer.data,status=status.HTTP_200_OK)
-        
-        try:
-            serializer = QuerySerializer(queryset,many=True)
-            return Response(serializer.data,status=status.HTTP_200_OK)
-        
-        except Query.DoesNotExist:
-            logger.error(e)
-            return Response({"error": "No queries found"}, status=status.HTTP_404_NOT_FOUND)
-
-        except APIException as e:
-            logger.error(e)
-            return Response(
-                {"error": e.detail},status=e.status_code)
-        
-        except Exception as e:
-            logger.error(e)
-            return Response(
-                {"error": "An unexpected error occurred."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
 
 class PingViewSet(viewsets.ViewSet):
-    "A viewset for the /ping endpoint"
+    """
+    A viewset for checking the server's status.
+    """
 
     def list(self, request):
-        try:
-            return Response(
-                {"status":"The service is up and running",
-                "timestamp": now(),
-                "version": "1.0.0"},
-                status=status.HTTP_200_OK)
-        except Exception as e:
-            logger.error(e)
-            return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({
+            "status": "The service is up and running",
+            "timestamp": now(),
+            "version": "1.0.0"
+        }, status=status.HTTP_200_OK)

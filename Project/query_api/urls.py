@@ -6,7 +6,6 @@ router = DefaultRouter()
 
 router.register(r'ping', views.PingViewSet,basename='ping')
 router.register(r'query', views.QueryViewSet,basename='query')
-router.register(r'result', views.ResultViewSet,basename='result')
 router.register(r'history', views.HistoryViewSet,basename='history')
 
 urlpatterns = router.urls

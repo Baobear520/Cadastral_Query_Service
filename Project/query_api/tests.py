@@ -13,7 +13,7 @@ class QueryAPITests(APITestCase):
     @patch('query_api.tasks.send_query.delay')
     def test_create_query(self, mock_send_query_delay):
         """
-        Test creating a new query via the /query endpoint
+        Test creating a new query via the /query endpoint.
         """
         # Initial dummy data for testing
         data = {
@@ -21,13 +21,22 @@ class QueryAPITests(APITestCase):
             'latitude': 50.4502,
             'longitude': 30.5231
         }
+
         response = self.client.post(self.url, data, format='json')
+        
+        # Check if the response status code is 201 CREATED
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Check if the response contains 'query_id'
         self.assertIn('query_id', response.data)
+        
+        # Check if the Query object was created
         self.assertEqual(Query.objects.count(), 1)
         self.assertEqual(Query.objects.get().cadastral_number, '555')
-        # Assert that the Celery task was called
-        mock_send_query_delay.assert_called_once_with(Query.objects.first().id)
+        
+        # Assert that the Celery task was called with the correct arguments
+        query = Query.objects.first()
+        mock_send_query_delay.assert_called_once_with(query.id, query.cadastral_number)
     
     def test_create_query_invalid_cadastral_num(self):
         """

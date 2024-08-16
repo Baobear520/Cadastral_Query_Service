@@ -107,37 +107,40 @@ CELERY_TIMEZONE = 'UTC'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-      "formatters": {
-        "verbose": {
-            "format": "{levelname} {asctime} {module} {funcName} line{lineno} {message}",
-            "style": "{",
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {funcName} line{lineno} {message}',
+            'style': '{',
         },
-      },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
+            'level': 'ERROR', 
         },
         'file': {
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'logs/debug.log'),
             'formatter': 'verbose',
+            'level': 'INFO',
         },
     },
     'loggers': {
         '': {
-            'handlers': ['file'],
-            'level': os.environ.get('DJANG0_LOG_LEVEL','INFO'),
+            'handlers': ['file'], 
+            'level': os.environ.get('DJANGO_LOG_LEVEL', 'INFO'),
         },
         'query_api': {
-            'handlers':['console','file'],
-            'level': 'ERROR',
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
         },
-        'query_api': {
-            'handlers':['file'],
-            'level': 'INFO', 
-            'propagate': False,  
-        }
+        'celery': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
 

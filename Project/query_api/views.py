@@ -16,14 +16,16 @@ class QueryViewSet(mixins.CreateModelMixin,viewsets.GenericViewSet):
     serializer_class = QuerySerializer
 
     def create(self, request, *args, **kwargs):
+        
+        cadastral_number = request.data.get('cadastral_number')
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         query = serializer.save()
 
         # Start asynchronous task
-        send_query.delay(query.id)
-        logger.info(f"A query with {request.data} parameters has been created")
-
+        send_query.delay(query.id,cadastral_number)
+        logger.info(f"A query with the id={query.id} has been created and added to the database")
+        
         return Response(
             {"query_id": query.id}, 
             status=status.HTTP_201_CREATED

@@ -1,11 +1,11 @@
-import logging, requests
+import logging, requests, os
 from celery import shared_task
 from django.db import IntegrityError
 from query_api.models import Query
 
  
 logger = logging.getLogger(__name__)
-
+THIRD_PARTY_SERVER_URL = os.getenv('THIRD_PARTY_SERVER_URL','http://localhost:8001/api/result/')
 
 @shared_task()
 def send_query(query_id, cadastral_number):
@@ -14,13 +14,12 @@ def send_query(query_id, cadastral_number):
 
     try:
         # Sending a get request to /results endpoint of Third_party_server running on 8001 port
-        response = requests.get(
-            "http://localhost:8001/api2/result/",
+        response = requests.get(THIRD_PARTY_SERVER_URL,
             params={'cadastral_number': cadastral_number},
             timeout=60
         )
         logger.info(f"Received response from Third_party_server with status {response.status_code}")
-        
+
         # Check if the response is successful and handle accordingly
         if response.status_code == 200:
             result = True 
@@ -28,7 +27,11 @@ def send_query(query_id, cadastral_number):
         elif response.status_code == 404:
             result = False
             logger.info(f"The property with cadastral_number {cadastral_number} doesn't exist")
-        
+        else:
+            result = None
+            query = Query.objects.get(pk=query_id)
+            query.delete()
+            logger.info(f"Deleted query with id {query.id}")
         # Try updating the query result in the database
         try:
             logger.info(f"Trying to add the result to the query {query_id}")

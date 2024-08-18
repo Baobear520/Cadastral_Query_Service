@@ -3,7 +3,6 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from query_api.models import Query
-from query_api.serializers import QuerySerializer
 
 
 class QueryAPITests(APITestCase):

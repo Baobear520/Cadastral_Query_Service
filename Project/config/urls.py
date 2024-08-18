@@ -19,7 +19,7 @@ urlpatterns = [
     #Service's API
     path('api/', include('query_api.urls')),
     #Documentation
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    path('swagger.yaml', schema_view.without_ui(cache_timeout=0), name='schema-yaml'),
+    path('docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('api.yaml', schema_view.without_ui(cache_timeout=0), name='schema-yaml'),
 ]
 

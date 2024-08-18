@@ -173,12 +173,8 @@ python manage.py test
 To run specific tests, use:
 
 ```
-python manage.py test query_api.tests.api_tests
-```
-or for Third_party_server:
-
-```
-python manage.py test property_api.tests.api_tests
+python manage.py test query_api.tests.test_api
+python manage.py test property_api.tests.test_api
 ```
 
 ## Contact

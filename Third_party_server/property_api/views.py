@@ -1,9 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.http import Http404
 from .models import Property
-from .serializers import PropertySerializer
+
 
 class PropertyView(APIView):
     """A view for retrieving a property filtered by cadastral number"""

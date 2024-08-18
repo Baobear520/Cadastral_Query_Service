@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class QueryViewSet(mixins.CreateModelMixin,viewsets.GenericViewSet):
     """
-    A viewset for handling Query creation and retrieval.
+    A viewset for handling Query creation.
     """
     queryset = Query.objects.all()
     serializer_class = QuerySerializer
@@ -22,7 +22,7 @@ class QueryViewSet(mixins.CreateModelMixin,viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         query = serializer.save()
 
-        # Start asynchronous task
+        # Start celery task 
         send_query.delay(query.id,cadastral_number)
         logger.info(f"A query with the id={query.id} has been created and added to the database")
         
@@ -31,9 +31,9 @@ class QueryViewSet(mixins.CreateModelMixin,viewsets.GenericViewSet):
             status=status.HTTP_201_CREATED
         )
 
-class HistoryViewSet(viewsets.ReadOnlyModelViewSet):
+class HistoryViewSet(mixins.ListModelMixin,viewsets.GenericViewSet):
     """
-    A viewset for retrieving the history of all queries or filtering by cadastral number.
+    A viewset for retrieving the history of all queries/a query filtered by a cadastral number.
     """
     serializer_class = HistorySerializer
 
@@ -47,7 +47,7 @@ class HistoryViewSet(viewsets.ReadOnlyModelViewSet):
 
 class PingViewSet(viewsets.ViewSet):
     """
-    A viewset for checking the server's status.
+    A viewset for checking the Query_API server's status.
     """
 
     def list(self, request):

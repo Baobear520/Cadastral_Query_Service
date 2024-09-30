@@ -1,6 +1,8 @@
 ---
 # Cadastral Query Service
 
+## Task ##
+Develop a service for processing real estate queries and sending requests to a third-party server for data validation. The service should store query data, validation results, and the history of all queries in a database. It should include a main API, an admin panel, a caching system, functional tests, documentation, and be deployed using Docker Compose.
 ## Project Overview
 This project is a Django-based service for managing cadastral queries. It integrates several components and technologies, including Celery for asynchronous task processing, Redis as a message broker, Docker Compose for container orchestration, integrated testing and Swagger/OpenAPI for API documentation.
 
